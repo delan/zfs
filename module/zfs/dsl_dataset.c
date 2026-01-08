@@ -833,11 +833,16 @@ dsl_dataset_hold_flags(dsl_pool_t *dp, const char *name, ds_hold_flags_t flags,
 	else
 		err = SET_ERROR(ENOENT);
 
-	/* we may be looking for a snapshot */
+	/* we may be looking for a snapshot or bookmark */
 	if (err == 0 && snapname != NULL) {
 		dsl_dataset_t *snap_ds;
 
-		if (*snapname++ != '@') {
+		switch (*snapname++) {
+		case '#':
+			goto hold_ds;
+		case '@':
+			break;
+		default:
 			dsl_dataset_rele_flags(ds, flags, tag);
 			dsl_dir_rele(dd, FTAG);
 			return (SET_ERROR(ENOENT));
@@ -860,6 +865,7 @@ dsl_dataset_hold_flags(dsl_pool_t *dp, const char *name, ds_hold_flags_t flags,
 			ds = snap_ds;
 		}
 	}
+hold_ds:
 	if (err == 0)
 		*dsp = ds;
 	dsl_dir_rele(dd, FTAG);
